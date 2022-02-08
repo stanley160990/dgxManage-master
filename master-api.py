@@ -240,7 +240,10 @@ async def get_run_schedule(id_hari, id_mesin, status):
 #Get Run Data per user
 @app.get('/run/{id_hari}/{id_mesin}/{status}/{user}')
 async def get_run_schedule(id_hari, id_mesin, status, user):
-    Query_data = "select username, tag, id, id_schedule, durasi, durasi_aktual, id_container, port, token from public.tbl_prototype_schedule where hari='" + id_hari + "' and status='" + status + "' and id_mesin='" + id_mesin + "' and username='"+ user +"'"
+    if status != all:
+        Query_data = "select username, tag, id, id_schedule, durasi, durasi_aktual, id_container, port, token, status from public.tbl_prototype_schedule where hari='" + id_hari + "' and status='" + status + "' and id_mesin='" + id_mesin + "' and username='"+ user +"'"
+    else:
+        Query_data = "select username, tag, id, id_schedule, durasi, durasi_aktual, id_container, port, token, status from public.tbl_prototype_schedule where hari='" + id_hari + "' and id_mesin='" + id_mesin + "' and username='"+ user +"'"
     psql_cur.execute(Query_data)
     run_data = psql_cur.fetchall()
 
@@ -252,7 +255,7 @@ async def get_run_schedule(id_hari, id_mesin, status, user):
             lst_mesin = url_mesin.split(":")
             url_jupyter = lst_mesin[0] + ":" + lst_mesin[1] + ":" + data[7]
             schedule_data = {'username': data[0], 'tag': data[1], 'id': data[2],
-            'id_schedule':data[3], 'durasi': data[4], 'durasi_aktual': data[5], 'id_container': data[6], 'url_jupyter': url_jupyter, 'token': data[8]}
+            'id_schedule':data[3], 'durasi': data[4], 'durasi_aktual': data[5], 'id_container': data[6], 'url_jupyter': url_jupyter, 'token': data[8], 'status': data[9]}
             return_data.append(schedule_data)
     else:
         return_data = []
