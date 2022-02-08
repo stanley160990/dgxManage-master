@@ -1,4 +1,5 @@
 from lib2to3.pytree import Base
+from re import X
 from typing import Optional
 from fastapi import Request, FastAPI, Depends, File, Form, UploadFile, status
 from fastapi.param_functions import Query
@@ -236,6 +237,26 @@ async def get_run_schedule(id_hari, id_mesin, status):
 
     return full_return_data
 
+#Get Run Data per user
+@app.get('/run/{id_hari}/{id_mesin}/{status}/{user}')
+async def get_run_schedule(id_hari, id_mesin, status, user):
+    Query_data = "select username, tag, id, id_schedule, durasi, durasi_aktual, id_container from public.tbl_prototype_schedule where hari='" + id_hari + "' and status='" + status + "' and id_mesin='" + id_mesin + "' and username='"+ user +"'"
+    psql_cur.execute(Query_data)
+    run_data = psql_cur.fetchall()
+
+    return_data = []
+    if run_data is not None:
+        for data in run_data:
+            schedule_data = {'username': data[0], 'tag': data[1], 'id': data[2],
+            'id_schedule':data[3], 'durasi': data[4], 'durasi_aktual': data[5], 'id_container': data[6]}
+            return_data.append(schedule_data)
+    else:
+        return_data = []
+
+    full_return_data = {"data": return_data} 
+
+    return full_return_data
+
 #Get mig Device
 @app.get('/mig/{id_schedule}')
 async def get_mig_dev(id_schedule):
@@ -247,6 +268,15 @@ async def get_mig_dev(id_schedule):
     return_data = {"error":False, "mig_device": mig_data}
 
     return return_data
+
+#rgistrasi_pelatihan
+@app.post('/pelatihan')
+async def create_pelatihan():
+    print()
+
+@app.get('/pelatihan/{user}')
+async def get_pelatihan():
+    print()
 
 if __name__ == "__main__":
     uvicorn.run("master-api:app", host="0.0.0.0", port=8181, log_level="info")
