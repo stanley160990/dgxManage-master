@@ -16,14 +16,15 @@ class Build_update(BaseModel):
     img_name : str
     tag : str
     id : str
-    token: str
+    
     
 class Run_update(BaseModel):
     id_container : str
     durasi_aktual : str
     id : str
     port: str
-    
+    token: str
+
 class Stop_update(BaseModel):
     id: str
     id_schedule: str
@@ -162,7 +163,7 @@ async def get_schedule(id_hari, id_mesin):
 @app.post("/build")
 async def build_update(update_data: Build_update):
     update_data_query = "update public.tbl_prototype_schedule set status='imageCreated', img_name='" \
-         + update_data.img_name + "', tag=" + str(update_data.tag) + ",token='" +  update_data.token + "' where id='" + update_data.id + "'"
+         + update_data.img_name + "', tag=" + str(update_data.tag) + " where id='" + update_data.id + "'"
     psql_cur.execute(update_data_query)
     psql_con.commit()
 
@@ -174,7 +175,7 @@ async def build_update(update_data: Build_update):
 @app.post("/run")
 async def build_update(update_data: Run_update):
     update_data_query = "update public.tbl_prototype_schedule set status='run',id_container='" \
-        + update_data.id_container + "', durasi_aktual=" + update_data.durasi_aktual +", port='" + update_data.port + "' where id='" + update_data.id + "'"
+        + update_data.id_container + "', durasi_aktual=" + update_data.durasi_aktual +", port='" + update_data.port + "', token='" + Run_update.token +"' where id='" + update_data.id + "'"
     print(update_data_query)
     psql_cur.execute(update_data_query)
     psql_con.commit()
