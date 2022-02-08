@@ -12,10 +12,6 @@ import uvicorn
 import json
 import datetime
 
-class Create_minio(BaseModel):
-    username: str
-    password: str
-
 class Build_update(BaseModel):
     img_name : str
     tag : str
@@ -31,9 +27,6 @@ class Run_update(BaseModel):
 class Stop_update(BaseModel):
     id: str
     id_schedule: str
-
-class Update_minio(BaseModel):
-    username: str
 
 
 app = FastAPI()
@@ -253,45 +246,6 @@ async def get_mig_dev(id_schedule):
     return_data = {"error":False, "mig_device": mig_data}
 
     return return_data
-
-# Minio Object
-@app.post('/minio')
-async def create_minio(minio_data: Create_minio):
-    url_data = psql_cur.fetchone()
-    headers = {'Content-Type': 'application/json'}
-    payload = {"username": minio_data.username, "password": minio_data.password}
-
-    agent_dockerfile_url = Config().master_obs_url + "/Dockerfile"
-    response_data = REST('POST', agent_dockerfile_url , headers, json.dumps(payload)).send()
-
-    return_data ={"error": False, 'message': "success"}
-
-    return return_data
-
-#API Update From Client
-@app.post('/minio/client')
-async def update_minio_client(updateClient_minio: Update_minio):
-
-    try:
-        time_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-
-        insert_data = (updateClient_minio.username, "active", time_now)
-        psql_cur.execute("insert into tbl_minio (username, status, created_date) values (%s,%s.%s)", insert_data)
-        psql_con.commit()
-
-        return_status = {"error": False, "message": "sukses mengupdate data"}
-    except Exception as e:
-        return_status = {"error": False, "message": str(e)}
-    
-    return return_status
-
-
-
-
-
-    
-    
-
 
 if __name__ == "__main__":
     uvicorn.run("master-api:app", host="0.0.0.0", port=8181, log_level="info")
