@@ -174,7 +174,7 @@ async def build_update(update_data: Build_update):
 @app.post("/run")
 async def build_update(update_data: Run_update):
     update_data_query = "update public.tbl_prototype_schedule set status='run',id_container='" \
-        + update_data.id_container + "', durasi_aktual=" + update_data.durasi_aktual +", port='" + update_data.port + "', token='"+ update_data.token +"' where id='" + update_data.id + "'"
+        + update_data.id_container + "', durasi_aktual=" + update_data.durasi_aktual +", port='" + update_data.port + "' where id='" + update_data.id + "'"
     print(update_data_query)
     psql_cur.execute(update_data_query)
     psql_con.commit()
