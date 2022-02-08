@@ -68,8 +68,8 @@ async def project(DockerImages: str = Form(...), username: str = Form(...), id_h
             agent_dockerfile_url = url_data[0] + "/Dockerfile"
             response_data = REST('POST', agent_dockerfile_url , headers, json.dumps(payload)).send()
 
-            insert_data = (schedule_data[0], id_hari, "register", username, response_data.json()['working_folder'], durasi, id_mesin)
-            psql_cur.execute("insert into public.tbl_prototype_schedule (id_schedule, hari, status, username, working_dir, durasi, id_mesin) values(%s, %s, %s, %s, %s, %s, %s)", insert_data)
+            insert_data = (schedule_data[0], id_hari, "register", username, response_data.json()['working_folder'], durasi, id_mesin, response_data.json()['docker_file'])
+            psql_cur.execute("insert into public.tbl_prototype_schedule (id_schedule, hari, status, username, working_dir, durasi, id_mesin, docker_file) values(%s,%s, %s, %s, %s, %s, %s, %s)", insert_data)
             psql_con.commit()
 
             return_val = {"error": False, "message": "Container telah di daftarkan"}
@@ -198,7 +198,7 @@ async def stop_update(update_data: Stop_update):
 #Get Schedule_data
 @app.get("/build/{id_hari}/{id_mesin}") 
 async def get_build_schedule(id_hari, id_mesin):
-    Query_data = "select working_dir, username, tag, id from public.tbl_prototype_schedule where hari='" + id_hari + "' and status='register' and id_mesin='" + id_mesin + "'"
+    Query_data = "select working_dir, username, tag, id, docker_file from public.tbl_prototype_schedule where hari='" + id_hari + "' and status='register' and id_mesin='" + id_mesin + "'"
     psql_cur.execute(Query_data)
     working_data = psql_cur.fetchall()
 
@@ -206,7 +206,7 @@ async def get_build_schedule(id_hari, id_mesin):
     if working_data is not None:
         for data in working_data:
             schedule_data = {'working_dir': data[0], 'username': data[1], 'tag': data[2],
-            'id':data[3]}
+            'id':data[3], 'docker_file':data[4]}
             return_data.append(schedule_data)
     else:
         return_data = []
