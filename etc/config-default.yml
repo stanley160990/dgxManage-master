@@ -1,0 +1,10 @@
+database:
+  host: 202.125.94.152
+  port: 5432
+  database: db_dgx
+  user: dgx
+  password: mysecretpassword
+
+master:
+  location: /srv/Data/Project/2021/Gunadarma/DGX-Manage/GPU-Agent
+  obs_url: http://localhost:9000
