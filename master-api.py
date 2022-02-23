@@ -36,7 +36,7 @@ class Stop_update(BaseModel):
 app = FastAPI()
 
 origins = [
-    "https://https://ai-coe.gunadarma.ac.id/",
+    "https://ai-coe.gunadarma.ac.id",
     "http://localhost",
     "http://localhost:3000",
 ]
