@@ -1,17 +1,19 @@
 from lib2to3.pytree import Base
-from re import X
+# from re import X
 from typing import Optional
 from fastapi import Request, FastAPI, Depends, File, Form, UploadFile, status
 from fastapi.param_functions import Query
-from requests.models import requote_uri
+# from requests.models import requote_uri
 from libs.Config import Config
 from libs.Connections import Psql
 from libs.REST import REST
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
 import uvicorn
 import json
 import datetime
+
 
 class Build_update(BaseModel):
     img_name : str
@@ -32,6 +34,21 @@ class Stop_update(BaseModel):
 
 
 app = FastAPI()
+
+origins = [
+    "https://https://ai-coe.gunadarma.ac.id/",
+    "http://localhost",
+    "http://localhost:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 psql_con, psql_cur = Psql(Config().database_host, Config().database_port, Config().database_database, Config().database_user, Config().database_password).connect()
 
