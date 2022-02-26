@@ -1,5 +1,5 @@
 import psycopg2
-import docker
+# import docker
 
 class Psql(object):
     def __init__(self, args1, args2, args3, args4, args5):

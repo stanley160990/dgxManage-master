@@ -138,7 +138,8 @@ async def get_hari():
         {'id':'4', 'nama': 'Kamis'},
         {'id':'5', 'nama': 'Jumat'},
         {'id':'6', 'nama': 'Sabtu'},
-        {'id':'7', 'nama': 'minggu'}
+        {'id':'7', 'nama': 'minggu'},
+        {'id':'10', 'nama': "Penelitian"}
     ]}
 
 @app.post('/schedule')
@@ -155,7 +156,12 @@ async def schedule_gen(id_hari: str = Form(...), id_mesin: str = Form(...)):
                 insert_data = ('1', '0', str(x) + ":" + str(y), id_mesin)
                 psql_cur.execute("insert into public.tbl_prototype_schedule_full(id_hari, status, mig_device, id_mesin) values (%s,%s,%s,%s)", insert_data)
                 psql_con.commit()
-    
+    elif id_hari == "10":
+        for x in range(0,8):
+            for y in range (0,2):
+                insert_data = (str(id_hari), '0', str(x) + ":" + str(y), id_mesin)
+                psql_cur.execute("insert into public.tbl_prototype_schedule_full(id_hari, status, mig_device, id_mesin) values (%s,%s,%s,%s)", insert_data)
+                psql_con.commit()
     retrun_status = {"error": False, "message": "schedule Telah Ditambahkan"}
 
     return retrun_status

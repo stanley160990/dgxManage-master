@@ -13,4 +13,3 @@ class Config(object):
         self.database_password = cfg["database"]["password"]
 
         self.master_location = cfg["master"]["location"]
-        self.master_obs_url = cfg["master"]["obs_url"]

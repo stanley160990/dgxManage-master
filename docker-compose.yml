@@ -1,0 +1,34 @@
+version: "3"
+services:
+  postgres:
+    restart: unless-stopped
+    image: postgres:13
+    ports:
+      - "9001:5432"
+    environment:
+      - POSTGRES_USER=dgx
+      - POSTGRES_PASSWORD=margonda100
+      - POSTGRES_DB=db_dgx
+    networks:
+      internalnet:
+        ipv4_address: 10.100.8.254
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8001:8181"
+    depends_on:
+      - postgres
+    networks:
+      internalnet:
+        ipv4_address: 10.100.8.250
+
+networks:
+  internalnet:
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.100.8.0/24
