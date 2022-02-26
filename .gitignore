@@ -5,3 +5,4 @@ GPU-Agent/Dockerfiles/
 *.pyc
 .venv/
 libs/__pycache__/
+docker/data_pg/*
