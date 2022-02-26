@@ -9,6 +9,8 @@ services:
       - POSTGRES_USER=dgx
       - POSTGRES_PASSWORD=margonda100
       - POSTGRES_DB=db_dgx
+    volumes:
+      - ./docker/data_pg:/var/lib/postgresql/data
     networks:
       internalnet:
         ipv4_address: 10.100.8.254
