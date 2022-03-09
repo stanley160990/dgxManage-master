@@ -1,3 +1,4 @@
+from email import message
 from lib2to3.pytree import Base
 # from re import X
 from typing import Optional
@@ -9,6 +10,10 @@ from libs.Connections import Psql
 from libs.REST import REST
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from libs.Connections import Ldap
+
+from ldap3.utils.hashed import hashed
+from ldap3 import MODIFY_REPLACE, HASHED_SALTED_SHA
 
 import uvicorn
 import json
@@ -51,12 +56,30 @@ app.add_middleware(
 
 
 psql_con, psql_cur = Psql(Config().database_host, Config().database_port, Config().database_database, Config().database_user, Config().database_password).connect()
-
+ldap_conn = Ldap(Config().ldap_host, Config().ldap_port, Config().ldap_username, Config().ldap_password).connect()
 
 @app.get("/")
 async def index():
     return_data = {"error": True, "message": "API DGX A100"}
 
+    return return_data
+
+@app.post("/ldap")
+async def post_ldap(username: str = Form(...), password: str = Form(...), mail: str = Form(...), telephoneNumber: str = Form(...), givenName: str = Form(...)):
+    user = "cn=" + username + ",ou=user,dc=ai-coe,dc=gunadarma,dc=ac,dc=id"
+
+    hash_pass = hashed(HASHED_SALTED_SHA, password)
+    givenName_split = givenName.split(" ")
+    sn = givenName_split[0]
+
+    data = {"givenname":givenName, "mail": mail, "sn": sn, "userpassword": hash_pass, "telephoneNumber": telephoneNumber, 'uid': username}
+
+    try:
+        ldap_conn.add(user, ["inetOrgPerson", "organizationalPerson", "top", "person"], data)
+        return_data = {"error": False, "message": "Ldap berhasil ditambhakan"}
+    except Exception as e:
+        return_data = {"error": True, "message": str(e)}
+    
     return return_data
 
 

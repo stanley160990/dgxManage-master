@@ -13,3 +13,8 @@ class Config(object):
         self.database_password = cfg["database"]["password"]
 
         self.master_location = cfg["master"]["location"]
+
+        self.ldap_host = cfg["ldap"]["host"]
+        self.ldap_port = cfg["ldap"]["port"]
+        self.ldap_username = cfg["ldap"]["username"]
+        self.ldap_password = cfg["ldap"]["password"]

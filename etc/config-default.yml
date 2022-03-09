@@ -5,6 +5,12 @@ database:
   user: dgx
   password: mysecretpassword
 
+ldap:
+  host:
+  port:
+  username:
+  password:
+
 master:
   location: /srv/Data/Project/2021/Gunadarma/DGX-Manage/GPU-Agent
   obs_url: http://localhost:9000

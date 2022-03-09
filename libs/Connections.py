@@ -1,5 +1,6 @@
 import psycopg2
 # import docker
+from ldap3 import Server, Connection, ALL
 
 class Psql(object):
     def __init__(self, args1, args2, args3, args4, args5):
@@ -35,3 +36,21 @@ class Psql(object):
                                                                port=port,
                                                                database=database)
         return postgreSQL_pool
+    
+class Ldap(object):
+    def __init__(self, args1, args2, args3, args4):
+        self.args1 = args1
+        self.args2 = args2
+        self.args3 = args3
+        self.args4 = args4
+
+    def connect(self):
+        host = self.args1
+        port = self.args2
+        username = self.args3
+        password = self.args4
+
+        server = Server(host + ":" + str(port), get_info=ALL)
+        conn = Connection(server, username, password, auto_bind=True)
+
+        return conn
