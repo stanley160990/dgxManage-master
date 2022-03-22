@@ -14,6 +14,7 @@ from libs.Connections import Ldap
 
 from ldap3.utils.hashed import hashed
 from ldap3 import MODIFY_REPLACE, HASHED_SALTED_SHA
+from jose import JWTError, jwt
 
 import uvicorn
 import json
@@ -66,10 +67,14 @@ async def index():
 
 @app.post("/ldap")
 async def post_ldap(username: str = Form(...), password: str = Form(...), mail: str = Form(...), telephoneNumber: str = Form(...), givenName: str = Form(...)):
-    user = "cn=" + username + ",ou=user,dc=ai-coe,dc=gunadarma,dc=ac,dc=id"
+    
+    free_username = username.replace('@', '_at_')
+    
+    user = "cn=" + free_username + ",ou=user,dc=ai-coe,dc=gunadarma,dc=ac,dc=id"
 
     hash_pass = hashed(HASHED_SALTED_SHA, password)
     givenName_split = givenName.split(" ")
+
     sn = givenName_split[0]
 
     data = {"givenname":givenName, "mail": mail, "sn": sn, "userpassword": hash_pass, "telephoneNumber": telephoneNumber, 'uid': username}
@@ -266,7 +271,7 @@ async def get_build_schedule(id_hari, id_mesin):
 #Get Run Data
 @app.get('/run/{id_hari}/{id_mesin}/{status}')
 async def get_run_schedule(id_hari, id_mesin, status):
-    Query_data = "select username, tag, id, id_schedule, durasi, durasi_aktual, id_container from public.tbl_prototype_schedule where hari='" + id_hari + "' and status='" + status + "' and id_mesin='" + id_mesin + "'"
+    Query_data = "select username, tag, id, id_schedule, durasi, durasi_aktual, id_container, img_name from public.tbl_prototype_schedule where hari='" + id_hari + "' and status='" + status + "' and id_mesin='" + id_mesin + "'"
     psql_cur.execute(Query_data)
     run_data = psql_cur.fetchall()
 
@@ -274,7 +279,7 @@ async def get_run_schedule(id_hari, id_mesin, status):
     if run_data is not None:
         for data in run_data:
             schedule_data = {'username': data[0], 'tag': data[1], 'id': data[2],
-            'id_schedule':data[3], 'durasi': data[4], 'durasi_aktual': data[5], 'id_container': data[6]}
+            'id_schedule':data[3], 'durasi': data[4], 'durasi_aktual': data[5], 'id_container': data[6], 'img_name': data[7]}
             return_data.append(schedule_data)
     else:
         return_data = []
