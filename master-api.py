@@ -76,7 +76,7 @@ async def post_ldap(username: str = Form(...), password: str = Form(...), mail: 
 
     sn = givenName_split[0]
 
-    data = {"givenname":givenName, "mail": mail, "sn": sn, "userpassword": hash_pass, "telephoneNumber": telephoneNumber, 'uid': username}
+    data = {"givenname":givenName, "mail": mail, "sn": sn, "userpassword": hash_pass, "telephoneNumber": telephoneNumber, 'uid': free_username}
 
     try:
         ldap_conn.add(user, ["inetOrgPerson", "organizationalPerson", "top", "person"], data)
