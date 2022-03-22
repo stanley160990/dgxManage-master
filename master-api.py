@@ -14,7 +14,6 @@ from libs.Connections import Ldap
 
 from ldap3.utils.hashed import hashed
 from ldap3 import MODIFY_REPLACE, HASHED_SALTED_SHA
-from jose import JWTError, jwt
 
 import uvicorn
 import json
