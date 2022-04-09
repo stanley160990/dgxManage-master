@@ -310,7 +310,8 @@ async def get_run_schedule(id_hari, id_mesin):
             schedule_data = {'id_schedule': data[0], 'img_name': data[1], 'tag': data[2], 'id': data[3]}
             return_data.append(schedule_data)
     
-    return return_data
+    full_return_data = {"data": return_data}
+    return full_return_data
 
 #------------------------- Eksternal API ----------------------------------------------------------------------------
 #Get Run Data per user -> Eksternal Usage
