@@ -274,10 +274,10 @@ async def stop_update(update_data: Stop_update):
 
     return return_data
 
-#Get build data -> internal usage
-@app.get("/build/{id_hari}/{id_mesin}") 
+#Get approval data -> internal usage
+@app.get("/approval/{id_hari}/{id_mesin}") 
 async def get_build_schedule(id_hari, id_mesin):
-    Query_data_query = "select working_dir, username, tag, id_approval, docker_file from public.tbl_flow_build where id_hari=%s and active=%s and id_mesin=%s"
+    Query_data_query = "select working_dir, username, tag, id_approval, docker_file from public.tbl_flow_approval where id_hari=%s and active=%s and id_mesin=%s"
     Query_data = (id_hari, True, id_mesin)
     psql_cur.execute(Query_data_query, Query_data)
     working_data = psql_cur.fetchall()
@@ -295,17 +295,12 @@ async def get_build_schedule(id_hari, id_mesin):
 
     return full_return_data
 
-# Get Run Data -> Internal Usage
-@app.get('/run/{id_hari}/{id_mesin}/{status}')
-async def get_run_schedule(id_hari, id_mesin, status):
-    run_data_query = "select id_container, img_name, id_approval, id_schedule from tbl_flow_run where id_hari=%s, id_mesin=%s, status=%s"
+# Get Build Data -> Internal Usage
+@app.get('/build/{id_hari}/{id_mesin}')
+async def get_run_schedule(id_hari, id_mesin):
+    run_data_query = "select id_schedule, img_name, tag, id_approval, from tbl_flow_build where id_hari=%s, id_mesin=%s, action=%s"
     
-    if status == "running":
-        db_status = True
-    elif status == "stop":
-        db_status = False
-    
-    run_data = (id_hari, id_mesin, db_status)
+    run_data = (id_hari, id_mesin, True)
     psql_cur.execute(run_data_query, run_data)
 
     run_data = psql_cur.fetchall()
@@ -313,7 +308,7 @@ async def get_run_schedule(id_hari, id_mesin, status):
     return_data = []
     if run_data is not None:
         for data in run_data:
-            schedule_data = {'id_container': data[0], 'img_name': data[1], 'id': data[2], 'id_schedule': data[3]}
+            schedule_data = {'id_schedule': data[0], 'img_name': data[1], 'tag': data[2], 'id': data[3]}
             return_data.append(schedule_data)
     
     return return_data
@@ -349,10 +344,10 @@ async def get_run_schedule(id_hari, id_mesin, status, user):
 
     return full_return_data
 
-#Get mig Device
+#Get mig Device -> internal Usage
 @app.get('/mig/{id_schedule}')
 async def get_mig_dev(id_schedule):
-    query_mig = "select mig_device from tbl_prototype_schedule_full where id_schedule='" + id_schedule +"'"
+    query_mig = "select mig_device from tbl_gpu_schedule where id_schedule='" + id_schedule +"'"
     print(query_mig)
     psql_cur.execute(query_mig)
     mig_data = psql_cur.fetchone()[0]
