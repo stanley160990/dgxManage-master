@@ -119,7 +119,7 @@ async def project(DockerImages: str = Form(...), username: str = Form(...), id_h
 
         # Update Data from return
         # prod
-        insert_data = (schedule_data[0], id_hari, username, response_data.json()['working_folder'], durasi, id_mesin, response_data.json()['docker_file'], "(now() at time zone 'utc')", True)
+        insert_data = (schedule_data[0], id_hari, username, response_data.json()['working_folder'], durasi, id_mesin, response_data.json()['docker_file'], True)
         # dev only
         # insert_data = (schedule_data[0], id_hari, username, "x", durasi, id_mesin, "Y", True)
         psql_cur.execute("insert into public.tbl_flow_approval (id_schedule, id_hari, username, working_dir, durasi, id_mesin, docker_file, created_at, active) values(%s,%s, %s, %s, %s, %s, %s, (now() at time zone 'utc'), %s)", insert_data)
