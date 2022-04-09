@@ -56,7 +56,7 @@ app.add_middleware(
 
 
 psql_con, psql_cur = Psql(Config().database_host, Config().database_port, Config().database_database, Config().database_user, Config().database_password).connect()
-# ldap_conn = Ldap(Config().ldap_host, Config().ldap_port, Config().ldap_username, Config().ldap_password).connect()
+ldap_conn = Ldap(Config().ldap_host, Config().ldap_port, Config().ldap_username, Config().ldap_password).connect()
 
 @app.get("/")
 async def index():
@@ -64,27 +64,27 @@ async def index():
 
     return return_data
 
-# @app.post("/ldap")
-# async def post_ldap(username: str = Form(...), password: str = Form(...), mail: str = Form(...), telephoneNumber: str = Form(...), givenName: str = Form(...)):
+@app.post("/ldap")
+async def post_ldap(username: str = Form(...), password: str = Form(...), mail: str = Form(...), telephoneNumber: str = Form(...), givenName: str = Form(...)):
     
-#     free_username = username.replace('@', '_at_')
+    free_username = username.replace('@', '_at_')
     
-#     user = "cn=" + free_username + ",ou=user,dc=ai-coe,dc=gunadarma,dc=ac,dc=id"
+    user = "cn=" + free_username + ",ou=user,dc=ai-coe,dc=gunadarma,dc=ac,dc=id"
 
-#     hash_pass = hashed(HASHED_SALTED_SHA, password)
-#     givenName_split = givenName.split(" ")
+    hash_pass = hashed(HASHED_SALTED_SHA, password)
+    givenName_split = givenName.split(" ")
 
-#     sn = givenName_split[0]
+    sn = givenName_split[0]
 
-#     data = {"givenname":givenName, "mail": mail, "sn": sn, "userpassword": hash_pass, "telephoneNumber": telephoneNumber, 'uid': free_username}
+    data = {"givenname":givenName, "mail": mail, "sn": sn, "userpassword": hash_pass, "telephoneNumber": telephoneNumber, 'uid': free_username}
 
-#     try:
-#         ldap_conn.add(user, ["inetOrgPerson", "organizationalPerson", "top", "person"], data)
-#         return_data = {"error": False, "message": "Ldap berhasil ditambhakan"}
-#     except Exception as e:
-#         return_data = {"error": True, "message": str(e)}
+    try:
+        ldap_conn.add(user, ["inetOrgPerson", "organizationalPerson", "top", "person"], data)
+        return_data = {"error": False, "message": "Ldap berhasil ditambhakan"}
+    except Exception as e:
+        return_data = {"error": True, "message": str(e)}
     
-#     return return_data
+    return return_data
 
 # Aksi Aproval Proposal
 @app.post("/approval")
@@ -114,14 +114,14 @@ async def project(DockerImages: str = Form(...), username: str = Form(...), id_h
         agent_dockerfile_url = url_data[0] + "/Dockerfile"
 
         # Send to Agent REST API
-        # response_data = REST('POST', agent_dockerfile_url , headers, json.dumps(payload)).send()
+        response_data = REST('POST', agent_dockerfile_url , headers, json.dumps(payload)).send()
 
 
         # Update Data from return
         # prod
-        # insert_data = (schedule_data[0], id_hari, username, response_data.json()['working_folder'], durasi, id_mesin, response_data.json()['docker_file'], "(now() at time zone 'utc')", True)
+        insert_data = (schedule_data[0], id_hari, username, response_data.json()['working_folder'], durasi, id_mesin, response_data.json()['docker_file'], "(now() at time zone 'utc')", True)
         # dev only
-        insert_data = (schedule_data[0], id_hari, username, "x", durasi, id_mesin, "Y", True)
+        # insert_data = (schedule_data[0], id_hari, username, "x", durasi, id_mesin, "Y", True)
         psql_cur.execute("insert into public.tbl_flow_approval (id_schedule, id_hari, username, working_dir, durasi, id_mesin, docker_file, created_at, active) values(%s,%s, %s, %s, %s, %s, %s, (now() at time zone 'utc'), %s)", insert_data)
         psql_con.commit()
 
