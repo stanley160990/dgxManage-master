@@ -277,7 +277,7 @@ async def stop_update(update_data: Stop_update):
 #Get approval data -> internal usage
 @app.get("/approval/{id_hari}/{id_mesin}") 
 async def get_build_schedule(id_hari, id_mesin):
-    Query_data_query = "select working_dir, username, tag, id_approval, docker_file from public.tbl_flow_approval where id_hari=%s and active=%s and id_mesin=%s"
+    Query_data_query = "select working_dir, id_approval, docker_file from public.tbl_flow_approval where id_hari=%s and active=%s and id_mesin=%s"
     Query_data = (id_hari, True, id_mesin)
     psql_cur.execute(Query_data_query, Query_data)
     working_data = psql_cur.fetchall()
@@ -285,8 +285,7 @@ async def get_build_schedule(id_hari, id_mesin):
     return_data = []
     if working_data is not None:
         for data in working_data:
-            schedule_data = {'working_dir': data[0], 'username': data[1], 'tag': data[2],
-            'id':data[3], 'docker_file':data[4]}
+            schedule_data = {'working_dir': data[0], 'id':data[1], 'docker_file':data[2]}
             return_data.append(schedule_data)
     else:
         return_data = []
