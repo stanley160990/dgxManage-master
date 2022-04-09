@@ -1,3 +1,4 @@
+from cProfile import run
 from email import message
 from lib2to3.pytree import Base
 # from re import X
@@ -28,7 +29,6 @@ class Build_update(BaseModel):
     
 class Run_update(BaseModel):
     id_container : str
-    durasi_aktual : str
     id : str
     port: str
     token: str
@@ -56,7 +56,7 @@ app.add_middleware(
 
 
 psql_con, psql_cur = Psql(Config().database_host, Config().database_port, Config().database_database, Config().database_user, Config().database_password).connect()
-ldap_conn = Ldap(Config().ldap_host, Config().ldap_port, Config().ldap_username, Config().ldap_password).connect()
+# ldap_conn = Ldap(Config().ldap_host, Config().ldap_port, Config().ldap_username, Config().ldap_password).connect()
 
 @app.get("/")
 async def index():
@@ -64,67 +64,69 @@ async def index():
 
     return return_data
 
-@app.post("/ldap")
-async def post_ldap(username: str = Form(...), password: str = Form(...), mail: str = Form(...), telephoneNumber: str = Form(...), givenName: str = Form(...)):
+# @app.post("/ldap")
+# async def post_ldap(username: str = Form(...), password: str = Form(...), mail: str = Form(...), telephoneNumber: str = Form(...), givenName: str = Form(...)):
     
-    free_username = username.replace('@', '_at_')
+#     free_username = username.replace('@', '_at_')
     
-    user = "cn=" + free_username + ",ou=user,dc=ai-coe,dc=gunadarma,dc=ac,dc=id"
+#     user = "cn=" + free_username + ",ou=user,dc=ai-coe,dc=gunadarma,dc=ac,dc=id"
 
-    hash_pass = hashed(HASHED_SALTED_SHA, password)
-    givenName_split = givenName.split(" ")
+#     hash_pass = hashed(HASHED_SALTED_SHA, password)
+#     givenName_split = givenName.split(" ")
 
-    sn = givenName_split[0]
+#     sn = givenName_split[0]
 
-    data = {"givenname":givenName, "mail": mail, "sn": sn, "userpassword": hash_pass, "telephoneNumber": telephoneNumber, 'uid': free_username}
+#     data = {"givenname":givenName, "mail": mail, "sn": sn, "userpassword": hash_pass, "telephoneNumber": telephoneNumber, 'uid': free_username}
 
-    try:
-        ldap_conn.add(user, ["inetOrgPerson", "organizationalPerson", "top", "person"], data)
-        return_data = {"error": False, "message": "Ldap berhasil ditambhakan"}
-    except Exception as e:
-        return_data = {"error": True, "message": str(e)}
+#     try:
+#         ldap_conn.add(user, ["inetOrgPerson", "organizationalPerson", "top", "person"], data)
+#         return_data = {"error": False, "message": "Ldap berhasil ditambhakan"}
+#     except Exception as e:
+#         return_data = {"error": True, "message": str(e)}
     
-    return return_data
+#     return return_data
 
-
+# Aksi Aproval Proposal
 @app.post("/approval")
 async def project(DockerImages: str = Form(...), username: str = Form(...), id_hari: str = Form(...), durasi: str = Form(...), id_mesin: str = Form(...)):
 
-    query_data_schedule = "select id_schedule from public.tbl_prototype_schedule_full where status='0' and id_hari = '"  + id_hari + "' and id_mesin='" + id_mesin + "' limit 1"
-    psql_cur.execute(query_data_schedule)
+    # GET id_schedule from tbl_prototype_schedule_full
+    query_data_schedule = "select id_schedule from public.tbl_gpu_schedule where status=%s and id_hari = %s and id_mesin=%s limit 1"
+    select_data = (True, id_hari, id_mesin)
+    psql_cur.execute(query_data_schedule, select_data)
     schedule_data = psql_cur.fetchone()
 
     if schedule_data is not None:
-        update_schedule = "update public.tbl_prototype_schedule_full set status=1 where id_schedule='" + schedule_data[0] + "'"
-        psql_cur.execute(update_schedule)
+        # update id_schedule to occupay
+        update_schedule = "update public.tbl_gpu_schedule set status=%s where id_schedule=%s"
+        update_data = (False, schedule_data[0])
+        psql_cur.execute(update_schedule, update_data)
         psql_con.commit()
 
-        select_user_sechedule = "select count(*) from public.tbl_prototype_schedule where username='" + username + "' and status='active'"
-        psql_cur.execute(select_user_sechedule)
-        jmlh_container = psql_cur.fetchone()[0]
+        # Get DGX URL
+        query_url = "select url from public.tbl_mesin where id_mesin='" + id_mesin + "'"
+        psql_cur.execute(query_url)
+        url_data = psql_cur.fetchone()
 
-        if jmlh_container < 3:
+        # Build Rest Data
+        headers = {'Content-Type': 'application/json'}
+        payload = {"id_hari": id_hari, "username": username, "DockerImages": DockerImages}
+        agent_dockerfile_url = url_data[0] + "/Dockerfile"
 
-            query_url = "select url from public.tbl_mesin where id_mesin='" + id_mesin + "'"
-            psql_cur.execute(query_url)
-            url_data = psql_cur.fetchone()
-            headers = {'Content-Type': 'application/json'}
-            payload = {"id_hari": id_hari, "username": username, "DockerImages": DockerImages}
+        # Send to Agent REST API
+        # response_data = REST('POST', agent_dockerfile_url , headers, json.dumps(payload)).send()
 
-            agent_dockerfile_url = url_data[0] + "/Dockerfile"
-            response_data = REST('POST', agent_dockerfile_url , headers, json.dumps(payload)).send()
 
-            insert_data = (schedule_data[0], id_hari, "register", username, response_data.json()['working_folder'], durasi, id_mesin, response_data.json()['docker_file'])
-            psql_cur.execute("insert into public.tbl_prototype_schedule (id_schedule, hari, status, username, working_dir, durasi, id_mesin, docker_file) values(%s,%s, %s, %s, %s, %s, %s, %s)", insert_data)
-            psql_con.commit()
+        # Update Data from return
+        # prod
+        # insert_data = (schedule_data[0], id_hari, username, response_data.json()['working_folder'], durasi, id_mesin, response_data.json()['docker_file'], "(now() at time zone 'utc')", True)
+        # dev only
+        insert_data = (schedule_data[0], id_hari, username, "x", durasi, id_mesin, "Y", True)
+        psql_cur.execute("insert into public.tbl_flow_approval (id_schedule, id_hari, username, working_dir, durasi, id_mesin, docker_file, created_at, active) values(%s,%s, %s, %s, %s, %s, %s, (now() at time zone 'utc'), %s)", insert_data)
+        psql_con.commit()
 
-            return_val = {"error": False, "message": "Container telah di daftarkan"}
-        else:
-            update_schedule = "update public.tbl_prototype_schedule_full set status=0 where id_schedule='" + schedule_data[0] + "'"
-            psql_cur.execute(update_schedule)
-            psql_con.commit()
-
-            return_val = {"error": True, "message": "Telah Mencapai Limit (2)"}
+        return_val = {"error": False, "message": "Container telah di daftarkan"}
+    
     elif schedule_data is None:
         return_val = {"error": True, "message": "jadwal penuh!!!"}
 
@@ -159,38 +161,29 @@ async def get_mesin():
 @app.get('/hari')
 async def get_hari():
     return {"error": False, "data":[
-        {'id':'1', 'nama': 'Senin'},
-        {'id':'2', 'nama': 'Selasa'},
-        {'id':'3', 'nama': 'Rabu'},
-        {'id':'4', 'nama': 'Kamis'},
-        {'id':'5', 'nama': 'Jumat'},
-        {'id':'6', 'nama': 'Sabtu'},
-        {'id':'7', 'nama': 'minggu'},
-        {'id':'10', 'nama': "Penelitian"}
+        {'id':'10', 'nama': "RSC GPU 20G (max 8)"},
+        {'id':'11', 'nama': "RSC GPU 40G (max 4)"},
+        {'id':'12', 'nama': "RSC CPU"}
     ]}
 
 @app.post('/schedule')
 async def schedule_gen(id_hari: str = Form(...), id_mesin: str = Form(...)):
-    if id_hari == "1":
-        for x in range(0,8):
-            for y in range (0,7):
-                insert_data = ('1', '0', str(x) + ":" + str(y), id_mesin)
-                psql_cur.execute("insert into public.tbl_prototype_schedule_full(id_hari, status, mig_device, id_mesin) values (%s,%s,%s,%s)", insert_data)
-                psql_con.commit()
-    elif id_hari == "2":
-        for x in range(0,8):
-            for y in range (0,7):
-                insert_data = ('1', '0', str(x) + ":" + str(y), id_mesin)
-                psql_cur.execute("insert into public.tbl_prototype_schedule_full(id_hari, status, mig_device, id_mesin) values (%s,%s,%s,%s)", insert_data)
-                psql_con.commit()
-    elif id_hari == "10":
-        for x in range(0,8):
+    if id_hari == "10":
+        for x in range(0,4):
             for y in range (0,2):
-                insert_data = (str(id_hari), '0', str(x) + ":" + str(y), id_mesin)
-                psql_cur.execute("insert into public.tbl_prototype_schedule_full(id_hari, status, mig_device, id_mesin) values (%s,%s,%s,%s)", insert_data)
+                insert_data = (str(id_hari), True, str(x) + ":" + str(y), id_mesin)
+                psql_cur.execute("insert into public.tbl_gpu_schedule(id_hari, status, mig_device, id_mesin) values (%s,%s,%s,%s)", insert_data)
                 psql_con.commit()
-    retrun_status = {"error": False, "message": "schedule Telah Ditambahkan"}
+    
+    elif id_hari == "11":
+        for x in range(4,8):
+            insert_data = (str(id_hari), True, str(x) , id_mesin)
+            psql_cur.execute("insert into public.tbl_gpu_schedule(id_hari, status, mig_device, id_mesin) values (%s,%s,%s,%s)", insert_data)
+            psql_con.commit()
 
+
+
+    retrun_status = {"error": False, "message": "schedule Telah Ditambahkan"}
     return retrun_status
 
 @app.get('/schedule/{id_hari}/{id_mesin}')
@@ -208,14 +201,27 @@ async def get_schedule(id_hari, id_mesin):
 
     return full_return_data
 
-
-
 # update For Build Data
 @app.post("/build")
 async def build_update(update_data: Build_update):
-    update_data_query = "update public.tbl_prototype_schedule set status='imageCreated', img_name='" \
-         + update_data.img_name + "', tag=" + str(update_data.tag) + " where id='" + update_data.id + "'"
-    psql_cur.execute(update_data_query)
+    select_approval_data_query = """SELECT id_approval, id_schedule, id_hari, username, working_dir, durasi, id_mesin, docker_file, 
+    created_at,active FROM public.tbl_flow_approval where id_approval=%s"""
+    select_approval_data = (update_data.id,)
+    psql_cur.execute(select_approval_data_query, select_approval_data)
+    approval_data = psql_cur.fetchone()
+
+    # Insert build data + move approval data
+    insert_data_query = """insert into public.tbl_flow_build (tag, img_name, id_approval, id_schedule, id_hari, username, working_dir, 
+    durasi, id_mesin, docker_file, created_at, active) 
+    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,(now() at time zone 'utc'), %s)"""
+    insert_data = (str(update_data.tag), update_data.img_name, approval_data[0], approval_data[1], approval_data[2], approval_data[3], 
+                    approval_data[4], approval_data[5], approval_data[6], approval_data[7], True)
+    psql_cur.execute(insert_data_query, insert_data)
+    psql_con.commit()
+
+    update_data_approval_query = "update public.tbl_flow_approval set active=%s where id_approval=%s"
+    update_data_approval = (False, update_data.id)
+    psql_cur.execute(update_data_approval_query, update_data_approval)
     psql_con.commit()
 
     return_data = {"error": False, "message": "data build berhasil di update"}
@@ -225,33 +231,55 @@ async def build_update(update_data: Build_update):
 # udpate For Run Data
 @app.post("/run")
 async def build_update(update_data: Run_update):
-    update_data_query = "update public.tbl_prototype_schedule set status='run',id_container='" \
-        + update_data.id_container + "', durasi_aktual=" + update_data.durasi_aktual +", port='" + update_data.port + "', token='" + update_data.token +"' where id='" + update_data.id + "'"
-    print(update_data_query)
-    psql_cur.execute(update_data_query)
+
+    #select Build Data
+    select_build_data_query = """SELECT tag, img_name, id_approval, id_schedule, id_hari, username, working_dir, durasi, id_mesin, 
+    docker_file FROM public.tbl_flow_build where id_approval=%s;"""
+    select_build_data = (update_data.id,)
+    psql_cur.execute(select_build_data_query, select_build_data)
+    build_data = psql_cur.fetchone()
+
+    # Insert run data + move build data
+    insert_data_query = """insert into public.tbl_flow_run (id_container, port, jupyter_token, tag, img_name, id_approval, id_schedule, 
+    id_hari, username, working_dir, durasi, id_mesin, docker_file, running_at, active) 
+    VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,(now() at time zone 'utc'), %s)"""
+    insert_data = (update_data.id_container, update_data.port, update_data.token, build_data[0], build_data[1],build_data[2],build_data[3],
+                    build_data[4],build_data[5],build_data[6],build_data[7],build_data[8], build_data[9],True)
+    psql_cur.execute(insert_data_query, insert_data)
+    psql_con.commit()
+
+    update_data_build_query = "update public.tbl_flow_build set active=%s where id_approval=%s"
+    update_data_build = (False, update_data.id) 
+    psql_cur.execute(update_data_build_query, update_data_build)
     psql_con.commit()
 
     return_data = {"error": False, "message": "data run berhasil di update"}
     
     return return_data
+
 # update Stop Data
 @app.post("/stop")
 async def stop_update(update_data: Stop_update):
-    update_data_query = "update public.tbl_prototype_schedule set status='stop' and id='"+ update_data.id +"'"
-    psql_cur.execute(update_data_query)
+    update_data_run_query = "update public.tbl_flow_run set active=%s, stoped_at=(now() at time zone 'utc') where id_approval=%s"
+    update_data_run=(False, update_data.id)
+    psql_cur.execute(update_data_run_query, update_data_run)
     psql_con.commit()
     
-    update_data1_query = "update public.tbl_prototype_schedule_full set status='0' where id_schedule='"+ update_data.id_schedule + "'"
-    psql_cur.execute(update_data1_query)
+    update_data_gpu_query = "update public.tbl_gpu_schedule set active=%s where id_schedule=%s"
+    update_data_gpu=(False, update_data.id_schedule)
+    psql_cur.execute(update_data_gpu_query, update_data_gpu)
     psql_con.commit()
 
     return_data = {"error": False, "message": "data stop berhasil di update"}
 
-#Get Schedule_data
+    return return_data
+
+#Get build data -> internal usage
 @app.get("/build/{id_hari}/{id_mesin}") 
 async def get_build_schedule(id_hari, id_mesin):
-    Query_data = "select working_dir, username, tag, id, docker_file from public.tbl_prototype_schedule where hari='" + id_hari + "' and status='register' and id_mesin='" + id_mesin + "'"
-    psql_cur.execute(Query_data)
+    Query_data_query = "select working_dir, username, tag, id_approval, docker_file from public.tbl_flow_build where id_hari=%s and active=%s and id_mesin=%s"
+    Query_data = (id_hari, True, id_mesin)
+    psql_cur.execute(Query_data_query, Query_data)
     working_data = psql_cur.fetchall()
 
     return_data = []
@@ -267,49 +295,56 @@ async def get_build_schedule(id_hari, id_mesin):
 
     return full_return_data
 
-#Get Run Data
+# Get Run Data -> Internal Usage
 @app.get('/run/{id_hari}/{id_mesin}/{status}')
 async def get_run_schedule(id_hari, id_mesin, status):
-    Query_data = "select username, tag, id, id_schedule, durasi, durasi_aktual, id_container, img_name from public.tbl_prototype_schedule where hari='" + id_hari + "' and status='" + status + "' and id_mesin='" + id_mesin + "'"
-    psql_cur.execute(Query_data)
+    run_data_query = "select id_container, img_name, id_approval, id_schedule from tbl_flow_run where id_hari=%s, id_mesin=%s, status=%s"
+    
+    if status == "running":
+        db_status = True
+    elif status == "stop":
+        db_status = False
+    
+    run_data = (id_hari, id_mesin, db_status)
+    psql_cur.execute(run_data_query, run_data)
+
     run_data = psql_cur.fetchall()
 
     return_data = []
     if run_data is not None:
         for data in run_data:
-            schedule_data = {'username': data[0], 'tag': data[1], 'id': data[2],
-            'id_schedule':data[3], 'durasi': data[4], 'durasi_aktual': data[5], 'id_container': data[6], 'img_name': data[7]}
+            schedule_data = {'id_container': data[0], 'img_name': data[1], 'id': data[2], 'id_schedule': data[3]}
             return_data.append(schedule_data)
-    else:
-        return_data = []
+    
+    return return_data
 
-    full_return_data = {"data": return_data} 
-
-    return full_return_data
-
-#Get Run Data per user
+#------------------------- Eksternal API ----------------------------------------------------------------------------
+#Get Run Data per user -> Eksternal Usage
 @app.get('/run/{id_hari}/{id_mesin}/{status}/{user}')
 async def get_run_schedule(id_hari, id_mesin, status, user):
-    if status != all:
-        Query_data = "select username, tag, id, id_schedule, durasi, durasi_aktual, id_container, port, token, status from public.tbl_prototype_schedule where hari='" + id_hari + "' and status='" + status + "' and id_mesin='" + id_mesin + "' and username='"+ user +"'"
-    else:
-        Query_data = "select username, tag, id, id_schedule, durasi, durasi_aktual, id_container, port, token, status from public.tbl_prototype_schedule where hari='" + id_hari + "' and id_mesin='" + id_mesin + "' and username='"+ user +"'"
-    psql_cur.execute(Query_data)
-    run_data = psql_cur.fetchall()
 
+    psql_cur.execute("select url from tbl_mesin where id_mesin='"+ id_mesin +"'")
+    url_mesin = psql_cur.fetchone()[0]
+    lst_mesin = url_mesin.split(":")
+    
+
+    psql_cur.execute("select id_container, jupyter_token, active, port from public.tbl_flow_run where username='" + user + "' and id_hari='" + id_hari + "'")
+    approval_data = psql_cur.fetchall()
     return_data = []
-    if run_data is not None:
-        for data in run_data:
-            psql_cur.execute("select url from tbl_mesin where id_mesin='"+ id_mesin +"'")
-            url_mesin = psql_cur.fetchone()[0]
-            lst_mesin = url_mesin.split(":")
-            url_jupyter = lst_mesin[0] + ":" + lst_mesin[1] + ":" + data[7]
-            schedule_data = {'username': data[0], 'tag': data[1], 'id': data[2],
-            'id_schedule':data[3], 'durasi': data[4], 'durasi_aktual': data[5], 'id_container': data[6], 'url_jupyter': url_jupyter, 'token': data[8], 'status': data[9]}
-            return_data.append(schedule_data)
-    else:
-        return_data = []
+    for approval in approval_data:
 
+        if approval[2] is True:
+            status = 'running'
+        else:
+            status = 'stop'
+        
+        url_jupyter = lst_mesin[0] + ":" + lst_mesin[1] + ":" + approval[3]
+
+        running_data = {"id_container":approval[0], 'url_jupyter': url_jupyter, 'token': approval[1], 'status': status}
+
+        return_data.append(running_data)
+    
+    
     full_return_data = {"data": return_data} 
 
     return full_return_data
