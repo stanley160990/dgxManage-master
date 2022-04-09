@@ -297,7 +297,7 @@ async def get_build_schedule(id_hari, id_mesin):
 # Get Build Data -> Internal Usage
 @app.get('/build/{id_hari}/{id_mesin}')
 async def get_run_schedule(id_hari, id_mesin):
-    run_data_query = "select id_schedule, img_name, tag, id_approval from tbl_flow_build where id_hari=%s and id_mesin=%s and action=%s"
+    run_data_query = "select id_schedule, img_name, tag, id_approval from tbl_flow_build where id_hari=%s and id_mesin=%s and active=%s"
     
     run_data = (id_hari, id_mesin, True)
     psql_cur.execute(run_data_query, run_data)
