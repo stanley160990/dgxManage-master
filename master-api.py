@@ -160,9 +160,10 @@ async def get_mesin():
 
 @app.get('/hari')
 async def get_hari():
+    
     return {"error": False, "data":[
         {'id':'10', 'nama': "RSC GPU 20G (max 8)"},
-        {'id':'11', 'nama': "RSC GPU 40G (max 4)"},
+        {'id':'11', 'nama': "RSC GPU 40G (max 3)"},
         {'id':'12', 'nama': "RSC CPU"}
     ]}
 
@@ -176,7 +177,7 @@ async def schedule_gen(id_hari: str = Form(...), id_mesin: str = Form(...)):
                 psql_con.commit()
     
     elif id_hari == "11":
-        for x in range(4,8):
+        for x in range(4,7):
             insert_data = (str(id_hari), True, str(x) , id_mesin)
             psql_cur.execute("insert into public.tbl_gpu_schedule(id_hari, status, mig_device, id_mesin) values (%s,%s,%s,%s)", insert_data)
             psql_con.commit()
